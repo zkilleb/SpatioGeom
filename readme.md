@@ -1,3 +1,7 @@
+### General Information
+
+An update of the original app found [here](https://github.com/jflowaa/Spatio-Geom). When completed, the update should allow for multi-cycle regions to be drawn and handled properly.
+
 A web interface for the [pyspatiotemporalgeom](https://pypi.python.org/pypi/pyspatiotemporalgeom/) package.
 
 ### Features
