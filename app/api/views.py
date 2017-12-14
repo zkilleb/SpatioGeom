@@ -4,7 +4,7 @@ from ..spatio_helper import (process_polygons, process_intersections,
                              process_unions, process_difference,
                              process_interpolate_regions,
                              process_interval_region_at_time,
-                             hseg_to_coords)
+                             hseg_to_coords, give_label)
 import json
 
 
@@ -249,3 +249,61 @@ def find_region_at_time():
     else:
         return jsonify(
             {"success": False, "data": "No common coords"})
+
+@api.route("/multicycle", methods=["POST"])
+def multicycle():
+  
+    data = json.loads(request.form.get("data"))
+    start_time = data.get("startTime")
+    end_time = data.get("endTime")
+    regions = [region for region in session[
+        "regions"] if (region.get("selected") and region.get("visible"))]
+    if len(regions) <= 2:
+        introplated = process_multicycle(
+            regions, start_time, end_time)
+    else:
+        return jsonify(
+            {"success": False, "data": "Not enough regions selected"})
+    if introplated:
+        interval_regions = {}
+        
+        for interval_tuple in introplated:
+            if interval_tuple:
+                max_time = 0
+                min_time = None
+                for line_tuple in interval_tuple:
+                    for line in line_tuple:
+                        if type(line) is tuple:
+                            if line[2] > max_time:
+                                max_time = line[2]
+                            if min_time is None or line[2] < min_time:
+                                min_time = line[2]
+                interval_regions[int(max_time)] = {
+                    "min_time": min_time,
+                    "interval_tuple": interval_tuple
+                }
+                max_time = 0
+                min_time = None
+        regions[0]["interval_region"] = interval_regions
+        regions[1]["interval_region"] = interval_regions
+        seg1 = hseg_to_coords(regions[1]["region"])
+        seg2 = hseg_to_coords(regions[0]["region"])
+        # Since each hseg from session will have the same unique id we must
+        # make the unique id ourselves.
+        segments = {
+            "2": seg1[2],
+            "3": seg2[2]
+        }
+        # This will merge the polygons int one polygon and store it.
+        paths = []
+        paths.append(seg1[2])
+        paths.append(seg2[2])
+        regions[0]["region"] = process_polygons(paths)
+        regions[1]["region"] = process_polygons(paths)
+        regions[0]["computation"] = "Multicycle Regions"
+        regions[1]["computation"] = "Multicycle Regions"
+        return jsonify({"success": True, "data": segments})
+    else:
+        return jsonify(
+            {"success": False, "data": "No common difference"})
+    return jsonify({"success": True})
