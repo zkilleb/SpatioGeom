@@ -2,6 +2,10 @@ from pyspatiotemporalgeom import region as region_logic
 from pyspatiotemporalgeom import intervalRegion as interval_region_logic
 import copy
 
+def give_label(regions):
+	hseg = region_logic.createRegionFromSegs(region)
+	return region_logic.giveUniqueLabelToReachCycle(hseg)
+
 
 def process_polygons(data):
     """
@@ -33,6 +37,17 @@ def process_polygons(data):
             seg_list.append(copy.deepcopy(coord_matrix))
     return region_logic.createRegionFromSegs(seg_list)
 
+def process_multicycle(regions):
+	region = regions[0].get("region")
+    
+    	for other_region in regions[1:]:
+       	 region = interval_region_logic.interpolateRegions(
+            	region, other_region.get("region"),
+            	float(start_time), float(end_time))
+        
+        if not region:
+            		return []
+    	return region
 
 def process_intersections(regions):
     """
