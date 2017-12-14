@@ -28,6 +28,15 @@ var polygons = {
         }
         clearSession();
     },
+    selectAll: function() {
+	 for (polygonID in this.collection) {
+            managePolygon(polygonID, "select", null);
+	    polygons.select(polygons.collection[polygonID]);	
+            
+        }
+
+    },
+
     newPolygon: function(poly, polyID, is3D, start, end) {
         if (polyID == null)
             polyID = 0;
@@ -184,7 +193,7 @@ function initialize() {
                                 $("#clear-regions").addClass("hidden");
                             }
                             restoreID.push(polygon);
-                            $("#custom-menu").addClass("hidden");
+                           
                             polygons.delete(polygons.collection[polygon]);
                         }
                     }
@@ -202,6 +211,52 @@ function initialize() {
         $("#region-list").empty();
         showEmptyRegionList();
         $("#clear-regions").addClass("hidden");
+    });
+
+    $("#stop-multi").click(function()
+        var startTime = 0;
+        var endTime = 50;
+        data = JSON.stringify(
+            {
+                "startTime" : startTime,
+                "endTime" : endTime
+            }
+        );
+        $.ajax({
+            type: "POST",
+            url: "/api/multicycle",
+            data: {"data": data},
+            success: function(data) {
+                if (data.success) {
+                    var restoreID = [];
+                    for (var polygon in polygons.collection) {
+                        if (polygons.collection[polygon].selected) {
+                            var button = "#delete-" + polygon;
+                            $(button).parent().remove();
+                            if (!$("#region-list").children().length) {
+                                showEmptyRegionList();
+                                $("#clear-regions").addClass("hidden");
+                            }
+                            restoreID.push(polygon);
+                            $("#custom-menu").addClass("hidden");
+                            polygons.delete(polygons.collection[polygon]);
+                        }
+                    }
+                    managePolygon(restoreID[0], "delete", null);
+                    generateNewPolygon(data.data, "Multicycle Regions", restoreID[1], startTime, endTime);
+                }
+            },
+            failure: function(data) {
+                console.log(data);
+            }
+        });
+    });
+    $("#clear-regions").on("click", function(e) {
+        polygons.clearAll();
+        $("#region-list").empty();
+        showEmptyRegionList();
+        $("#clear-regions").addClass("hidden");
+        });
     });
 }
 
